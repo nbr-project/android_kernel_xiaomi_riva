@@ -109,7 +109,7 @@
  * ON: schedtune.prefer_idle is replaced with need_idle
  * OFF: schedtune.prefer_idle is honored as is.
  */
-#define SCHED_FEAT_EAS_USE_NEED_IDLE 1
+#define SCHED_FEAT_EAS_USE_NEED_IDLE 0
 /*
  * Inflate the effective utilization of SchedTune-boosted tasks, which
  * generally leads to usage of higher frequencies.
