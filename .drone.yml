@@ -1,0 +1,14 @@
+---
+clone:
+  depth: 1
+kind: pipeline
+name: pipe
+steps:
+  - name: build
+    image: archlinux:base-devel
+    commands:
+      - curl -fsSL "https://repo.archlinuxcn.org/x86_64/glibc-linux4-2.33-4-x86_64.pkg.tar.zst" | bsdtar -C / -xvf -
+      - pacman -Sy
+      - pacman -S git bc inetutils python2 zip --noconfirm
+      - ./build-kernel.sh
+      - curl -i -T anykernel-3/stock-kernel-riva.zip https://oshi.at
