@@ -688,7 +688,7 @@ int32_t wt_flash_flashlight(bool boolean)
 	}
 	if (flash_ctrl_wt->switch_trigger)
 		led_trigger_event(flash_ctrl_wt->switch_trigger, 1);
-		CDBG("WT Exit\n");
+	CDBG("WT Exit\n");
 	}
 	return 0;
 }
