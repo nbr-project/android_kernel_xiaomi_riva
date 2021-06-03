@@ -46,9 +46,6 @@
 #define __printf(a,b)
 #endif
 
-void __printf(3,4) limLog(tpAniSirGlobal pMac, tANI_U32 loglevel,
-                          const char *pString, ...);
-
 /* define this to show more message in the LIM during TDLS development */
 #define LIM_DEBUG_TDLS
 

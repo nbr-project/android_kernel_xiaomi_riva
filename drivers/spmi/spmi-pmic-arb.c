@@ -871,6 +871,7 @@ static u16 pmic_arb_find_apid(struct spmi_pmic_arb *pa, u16 ppid)
 	 * ppid_to_apid is an in-memory invert of that table.
 	 */
 	for (apid = pa->last_apid; ; apid++) {
+		offset = pa->ver_ops->channel_map_offset(apid);
 		if (offset >= pa->core_size)
 			break;
 
