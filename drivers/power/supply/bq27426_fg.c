@@ -302,31 +302,6 @@ static int __fg_read_block(struct i2c_client *client, u8 reg, u8 *buf, u8 len)
 	return ret;
 }
 
-static int __fg_write_block(struct i2c_client *client, u8 reg, u8 *buf, u8 len)
-{
-	int ret;
-	struct i2c_msg msg;
-	u8 data[64];
-	int i = 0;
-
-	data[0] = reg;
-	memcpy(&data[1], buf, len);
-
-	msg.addr = client->addr;
-	msg.flags = 0;
-	msg.buf = data;
-	msg.len = len + 1;
-
-	for (i = 0; i < 3; i++) {
-		ret = i2c_transfer(client->adapter, &msg, 1);
-		if (ret >= 0)
-			return ret;
-		else
-			msleep(5);
-	}
-	return ret;
-}
-
 
 static int fg_read_byte(struct bq_fg_chip *bq, u8 reg, u8 *val)
 {
@@ -400,20 +375,6 @@ static int fg_read_block(struct bq_fg_chip *bq, u8 reg, u8 *buf, u8 len)
 	
 	return ret;
 	
-}
-
-static int fg_write_block(struct bq_fg_chip *bq, u8 reg, u8 *data, u8 len)
-{
-	int ret;
-
-	if (bq->skip_writes)
-		return 0;
-	
-	mutex_lock(&bq->i2c_rw_lock);
-	ret = __fg_write_block(bq->client, reg, data, len);
-	mutex_unlock(&bq->i2c_rw_lock);
-
-	return ret;
 }
 
 #define	CTRL_REG				0x00
@@ -711,40 +672,6 @@ static int fg_dm_post_access(struct bq_fg_chip *bq)
 }
 EXPORT_SYMBOL_GPL(fg_dm_post_access);
 
-static int fg_dm_enter_cfg_mode(struct bq_fg_chip *bq)
-{
-		return fg_dm_pre_access(bq);
-}
-
-static int fg_dm_exit_cfg_mode(struct bq_fg_chip *bq)
-{
-	int ret;
-	int i = 0;
-
-
-	ret = fg_write_word(bq, bq->regs[BQ_FG_REG_CTRL],
-						FG_SUBCMD_EXIT_CFGMODE);
-	if (ret < 0)
-		return ret;
-	
-	msleep(100);
-
-	while(i++ < CFG_UPDATE_POLLING_RETRY_LIMIT) {
-		ret = fg_check_cfg_update_mode(bq);
-		if (!ret && !bq->cfg_update_mode)
-			break;
-		msleep(100);
-	}
-	
-	if (i == CFG_UPDATE_POLLING_RETRY_LIMIT) {
-		pr_err("Failed to exit cfgupdate mode\n");
-		return -1;
-	} else {
-		return fg_seal(bq);
-	}
-}
-EXPORT_SYMBOL_GPL(fg_dm_exit_cfg_mode);
-
 
 
 #define	DM_ACCESS_BLOCK_DATA_CHKSUM	0x60
@@ -790,54 +717,6 @@ static int fg_dm_read_block(struct bq_fg_chip *bq, u8 classid,
 		return 1;
 }
 EXPORT_SYMBOL_GPL(fg_dm_read_block);
-
-static int fg_dm_write_block(struct bq_fg_chip *bq, u8 classid,
-							u8 offset, u8 *data)
-{
-	int ret;
-	u8 cksum;
-	u8 buf[64];
-	u8 blk_offset = offset >> 5;
-
-	pr_info("subclass:%d, offset:%d\n", classid, offset);
-
-	ret = fg_write_byte(bq, DM_ACCESS_BLOCK_DATA_CTRL, 0);
-	if (ret < 0)
-		return ret;
-	msleep(5);
-	ret = fg_write_byte(bq, DM_ACCESS_BLOCK_DATA_CLASS, classid);
-	if (ret < 0)
-		return ret;
-	msleep(5);
-	ret = fg_write_byte(bq, DM_ACCESS_DATA_BLOCK, blk_offset);
-	if (ret < 0)
-		return ret;
-	ret = fg_write_block(bq, DM_ACCESS_BLOCK_DATA, data, 32);
-	msleep(5);
-	
-	fg_print_buf(__func__, data, 32);
-	
-	cksum = checksum(data, 32);
-	ret = fg_write_byte(bq, DM_ACCESS_BLOCK_DATA_CHKSUM, cksum);
-	if (ret < 0)
-		return ret;
-	msleep(5);
-
-	ret = fg_write_byte(bq, DM_ACCESS_DATA_BLOCK, blk_offset);
-	if (ret < 0)
-		return ret;
-	msleep(5);
-	ret = fg_read_block(bq, DM_ACCESS_BLOCK_DATA, buf, 32);
-	if (ret < 0)
-		return ret;
-	if (memcpy(data, buf, 32)) {
-		pr_err("Error updating subclass %d offset %d\n",
-				classid, offset);
-		return 1;
-	}
-	return 0;
-}
-EXPORT_SYMBOL_GPL(fg_dm_write_block);
 
 static int fg_read_fw_version(struct bq_fg_chip *bq)
 {
@@ -1506,43 +1385,6 @@ static const struct attribute_group fg_attr_group = {
 };
 
 
-
-static int fg_enable_sleep(struct bq_fg_chip *bq, bool enable)
-{
-
-	int ret;
-	u8 rd_buf[64];
-
-	memset(rd_buf, 0, 64);
-	mutex_lock(&bq->update_lock);
-	ret = fg_dm_enter_cfg_mode(bq);
-	if (ret) {
-		mutex_unlock(&bq->update_lock);
-		return ret;
-	}
-
-	ret = fg_dm_read_block(bq, 64, 0, rd_buf);	//OpConfig
-	if (ret) {
-		fg_dm_exit_cfg_mode(bq);
-		mutex_unlock(&bq->update_lock);
-		return ret;
-	}
-
-	if (enable)
-		rd_buf[1] |=0x20;	// set SLEEP bit
-	else
-		rd_buf[1] &=~0x20;	// clear SLEEP bit
-	
-	
-	ret = fg_dm_write_block(bq, 64, 0, rd_buf);
-	
-	fg_dm_exit_cfg_mode(bq);
-
-	mutex_unlock(&bq->update_lock);
-
-	return ret;
-}
-EXPORT_SYMBOL_GPL(fg_enable_sleep);
 
 static void fg_dump_registers(struct bq_fg_chip *bq)
 {

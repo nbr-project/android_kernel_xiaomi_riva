@@ -543,22 +543,6 @@ int bq2560x_get_hiz_mode(struct bq2560x *bq, u8 *state)
 EXPORT_SYMBOL_GPL(bq2560x_get_hiz_mode);
 
 
-static int bq2560x_enable_term(struct bq2560x* bq, bool enable)
-{
-	u8 val;
-	int ret;
-
-	if (enable)
-		val = REG05_TERM_ENABLE << REG05_EN_TERM_SHIFT;
-	else
-		val = REG05_TERM_DISABLE << REG05_EN_TERM_SHIFT;
-
-	ret = bq2560x_update_bits(bq, BQ2560X_REG_05, REG05_EN_TERM_MASK, val);
-
-	return ret;
-}
-EXPORT_SYMBOL_GPL(bq2560x_enable_term);
-
 int bq2560x_set_boost_current(struct bq2560x *bq, int curr)
 {
 	u8 val;
@@ -637,31 +621,6 @@ static int bq2560x_enable_batfet(struct bq2560x *bq)
 }
 EXPORT_SYMBOL_GPL(bq2560x_enable_batfet);
 
-
-static int bq2560x_disable_batfet(struct bq2560x *bq)
-{
-	const u8 val = REG07_BATFET_OFF << REG07_BATFET_DIS_SHIFT;
-
-	return bq2560x_update_bits(bq, BQ2560X_REG_07, REG07_BATFET_DIS_MASK,
-				val);
-}
-EXPORT_SYMBOL_GPL(bq2560x_disable_batfet);
-
-static int bq2560x_set_batfet_delay(struct bq2560x *bq, uint8_t delay)
-{
-	u8 val;
-
-	if (delay == 0)
-		val = REG07_BATFET_DLY_0S;
-	else
-		val = REG07_BATFET_DLY_10S;
-	
-	val <<= REG07_BATFET_DLY_SHIFT;
-
-	return bq2560x_update_bits(bq, BQ2560X_REG_07, REG07_BATFET_DLY_MASK,
-								val);
-}
-EXPORT_SYMBOL_GPL(bq2560x_set_batfet_delay);
 
 static int bq2560x_charging_disable(struct bq2560x *bq, int reason, 
 					int disable)
@@ -1999,9 +1958,7 @@ static const unsigned char* charge_stat_str[] = {
 static void bq2560x_dump_status(struct bq2560x* bq)
 {
 	u8 status;
-	u8 addr;
 	int ret;
-	u8 val;
 	union power_supply_propval batt_prop = {0,};
 	
 	ret = bq2560x_get_batt_property(bq,

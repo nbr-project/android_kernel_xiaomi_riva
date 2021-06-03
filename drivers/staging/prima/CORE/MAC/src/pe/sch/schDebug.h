@@ -50,8 +50,5 @@
 #define __printf(a,b)
 #endif
 
-void __printf(3,4) schLog(tpAniSirGlobal pMac, tANI_U32 loglevel,
-                          const char *pString, ...);
-
 #include <disable.h>
 #endif

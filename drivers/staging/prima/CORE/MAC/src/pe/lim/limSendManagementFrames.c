@@ -7348,7 +7348,9 @@ static void lim_tx_mgmt_frame(tpAniSirGlobal mac_ctx,
                               struct sir_mgmt_msg *mb_msg, uint32_t msg_len,
                               void *packet, uint8_t *frame)
 {
+#ifdef TRACE_RECORD
     tpSirMacFrameCtl fc = (tpSirMacFrameCtl)mb_msg->data;
+#endif
     eHalStatus hal_status;
     uint8_t sme_session_id = 0;
     tpPESession session;
@@ -7389,7 +7391,9 @@ void lim_send_mgmt_frame_tx(tpAniSirGlobal mac_ctx, tpSirMsgQ msg)
 {
     struct sir_mgmt_msg *mb_msg = (struct sir_mgmt_msg *)msg->bodyptr;
     uint32_t msg_len;
+#ifdef TRACE_RECORD
     tpSirMacFrameCtl fc = (tpSirMacFrameCtl)mb_msg->data;
+#endif
     uint8_t sme_session_id;
     eHalStatus halstatus;
     uint8_t *frame;
