@@ -1,21 +1,25 @@
 clone () {
 git clone --depth=1 https://github.com/nbr-project/AnyKernel3 -b stock anykernel-3
-git clone --depth=1 https://github.com/nbr-project/arm64-gcc -b master gcc
-git clone --depth=1 https://github.com/nbr-project/arm-gcc -b master gcc32
+git clone --depth=1 https://github.com/nbr-project/nbr-clang -b master
 }
 
 export TZ=Asia/Jakarta
-export ARCH=arm64
-export SUBARCH=arm64
-export PATH=$(pwd)/gcc/bin:$(pwd)/gcc32/bin:$PATH
-export CROSS_COMPILE=aarch64-linux-gnu-
-export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+export PATH=$(pwd)/nbr-clang/bin:$PATH
 export KBUILD_BUILD_HOST=drone
 export KBUILD_BUILD_USER=mamles
 
 compile () {
-make O=out riva_defconfig
-make O=out -j$(nproc --all)
+make O=out ARCH=arm64 riva_defconfig
+make O=out ARCH=arm64 \
+    CC=clang \
+    AR=llvm-ar \
+    NM=llvm-nm \
+    OBJCOPY=llvm-objcopy \
+    OBJDUMP=llvm-objdump \
+    STRIP=llvm-strip \
+    CROSS_COMPILE=aarch64-linux-gnu- \
+    CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+    -j$(nproc --all)
 if ! [ -a  out/arch/arm64/boot/Image.gz-dtb ]; then
     exit 1
 fi
