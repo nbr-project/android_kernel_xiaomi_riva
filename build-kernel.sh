@@ -29,6 +29,7 @@ repack() {
     cp out/arch/arm64/boot/Image.gz-dtb anykernel-3
     cd anykernel-3
     zip -r9q stock-kernel-riva.zip * -x .git README.md $(echo *.zip)
+    rm -rf Image.gz-dtb
 }
 
 clone
