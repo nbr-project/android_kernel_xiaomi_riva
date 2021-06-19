@@ -1,10 +1,10 @@
 clone() {
     git clone --depth=1 https://github.com/nbr-project/AnyKernel3 -b stock anykernel-3
-    git clone --depth=1 https://github.com/nbr-project/nbr-clang -b master
+    git clone --depth=1 https://github.com/kdrag0n/proton-clang -b master
 }
 
 export TZ=Asia/Jakarta
-export PATH=$(pwd)/nbr-clang/bin:$PATH
+export PATH=$(pwd)/proton-clang/bin:$PATH
 export KBUILD_BUILD_HOST=drone
 export KBUILD_BUILD_USER=mamles
 
