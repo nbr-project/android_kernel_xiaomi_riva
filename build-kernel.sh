@@ -2,7 +2,7 @@ clone() {
     if ! [ -a anykernel-3 ]; then
         git clone --depth=1 https://github.com/nbr-project/AnyKernel3 -b stock-riva anykernel-3
     fi
-    if ! [ -a proton-clang ]; then
+    if ! [ -a clang ]; then
         git clone --depth=1 https://github.com/nbr-project/clang -b master clang
     fi
 }
